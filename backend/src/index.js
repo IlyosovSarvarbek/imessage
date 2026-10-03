@@ -3,12 +3,16 @@ import "dotenv/config"
 import connectDB from "./lib/db.js"; // Import the connectDB function from the db.js file
 import cors from "cors";
 import { clerkMiddleware} from "@clerk/express"
+import fs from "fs";
+import path from "path";
 
 const app = express();
 
 
 const PORT = process.env.PORT || 3000;
 const FRONTEND_URL = process.env.FRONTEND_URL;
+
+const publicDir = path.join(process.cwd(), "public");
 
 app.use(cors({
   origin: FRONTEND_URL,
@@ -20,6 +24,14 @@ app.use(clerkMiddleware());
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok" });
 });
+
+// if public directory exists, serve static files from it
+if (fs.existsSync(publicDir)) {
+  app.use(express.static(publicDir));
+  app.get("/*any", (req, res, next) => {
+    res.sendFile(path.join(publicDir, "index.html"), (err) => next(err));
+  })
+}
 
 app.listen(PORT, () => {
   connectDB(); // Call the connectDB function to establish a connection to the database
