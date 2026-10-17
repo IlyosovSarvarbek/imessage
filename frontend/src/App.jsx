@@ -4,17 +4,15 @@ import { Routes, Route } from 'react-router';
 import ChatPage from "./pages/ChatPage"
 import AuthPage from './pages/AuthPage';
 import { useAuth } from '@clerk/react';
-import {Spinner} from "@heroui/react";
 import { Navigate } from 'react-router';
+import PageLoader from './components/PageLoader';
 
 
 function App() {
   const {isSignedIn, isLoaded} = useAuth();
   if(!isLoaded){
     return(
-        <div className="flex items-center gap-8 w-full h-full">
-              <Spinner className="animate-[spin_1.5s_linear_infinite] motion-reduce:animate-none" />
-        </div>
+        <PageLoader/>
     )
   }
   return (
