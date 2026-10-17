@@ -20,7 +20,7 @@ const continueButtonClassName = [
   "dark:after:shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]",
 ].join(" ");
 
-export default function AuthActionPanel() {
+export function AuthActionPanel() {
   const clerk = useClerk();
 
   return (

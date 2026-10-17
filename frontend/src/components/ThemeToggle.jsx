@@ -2,7 +2,7 @@ import { Button } from "@heroui/react";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "../context/theme";
 
-export default function ThemeToggle() {
+export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
 
   return (

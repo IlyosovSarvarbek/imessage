@@ -15,7 +15,7 @@ const heroImageClassName = [
   "sm:w-[min(88%,21rem)] md:max-h-[min(52vh,440px)] md:w-[min(90%,22rem)]",
 ].join(" ");
 
-export default function AuthHeroPanel() {
+export function AuthHeroPanel() {
   return (
     <section className={heroPanelClassName}>
       <AuthHeroPattern />
