@@ -57,7 +57,17 @@ export const useChatStore = create(
         set({ isMessagesLoading: true });
         try {
           const res = await axiosInstance.get(`/messages/${userId}`);
-          set({ messages: res.data });
+          if (String(get().activeConversationId) !== String(userId)) return;
+
+          set((state) => {
+            const messagesById = new Map(
+              [...res.data, ...state.messages].map((message) => [String(message._id), message]),
+            );
+            const messages = Array.from(messagesById.values()).sort(
+              (first, second) => new Date(first.createdAt) - new Date(second.createdAt),
+            );
+            return { messages };
+          });
         } catch (error) {
           toast.error(error.response?.data?.message || "Failed to load messages");
         } finally {
@@ -80,20 +90,21 @@ export const useChatStore = create(
         }
       },
 
-      subscribeToMessages: (userId) => {
-        if (!userId) return;
-
+      subscribeToMessages: () => {
         const socket = useAuthStore.getState().socket;
         if (!socket) return;
 
         socket.off("newMessage");
         socket.on("newMessage", (newMessage) => {
-          // if im not the receiver don't do anything just return
-          if (String(newMessage.senderId) !== String(userId)) return;
-
-          set({ messages: [...get().messages, newMessage] });
-
           get().getConversations();
+
+          if (String(newMessage.senderId) !== String(get().activeConversationId)) return;
+
+          set((state) => ({
+            messages: state.messages.some((message) => message._id === newMessage._id)
+              ? state.messages
+              : [...state.messages, newMessage],
+          }));
         });
       },
 
@@ -111,7 +122,7 @@ export const useChatStore = create(
             state.users.find((user) => user._id === activeConversationId) ||
             state.conversations.find((user) => user._id === activeConversationId) ||
             null,
-          messages: activeConversationId ? state.messages : [],
+          messages: state.activeConversationId === activeConversationId ? state.messages : [],
         }));
       },
 
