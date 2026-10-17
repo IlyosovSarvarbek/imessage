@@ -1,6 +1,7 @@
 import Message from "../models/message.model.js";
+import User from "../models/user.model.js";
 import { hasImagekitConfig,uploadChatMedia } from "../lib/imagekit.js";
-import { getReceiverSocketId } from "../lib/socket.js";
+import { getReceiverSocketId, io } from "../lib/socket.js";
 export async function getUsersForSidebar(req, res) {
     try{
         const currentUserId = req.user._id;
@@ -69,6 +70,11 @@ export async function sendMessage(req, res) {
         const { id: receiverId } = req.params;
         const { text } = req.body;
         const senderId = req.user._id;
+        const messageText = typeof text === "string" ? text.trim() : "";
+
+        if (!req.file && !messageText) {
+            return res.status(400).json({ error: "Message text or media is required" });
+        }
 
         let videoUrl;
         let imageUrl;
@@ -78,29 +84,25 @@ export async function sendMessage(req, res) {
                 return res.status(500).json({ error: "ImageKit is not configured" });
             }
 
-            const url = await uploadChatMedia(req.file);
-        }
-
-        if(req.file && req.file.mimetype.startsWith("video/")){
-            videoUrl = url;
-        }else if(req.file && req.file.mimetype.startsWith("image/")){
-            imageUrl = url;
-        } else {
-            // If the file is neither an image nor a video, return an error
-            return res.status(400).json({ error: "Invalid file type. Only images and videos are allowed." });
+            const mediaUrl = await uploadChatMedia(req.file);
+            if(req.file.mimetype.startsWith("video/")){
+                videoUrl = mediaUrl;
+            }else if(req.file.mimetype.startsWith("image/")){
+                imageUrl = mediaUrl;
+            } else {
+                return res.status(400).json({ error: "Invalid file type. Only images and videos are allowed." });
+            }
         }
 
         const newMessage = new Message({
             senderId,
             receiverId,
-            text,
+            text: messageText,
             image: imageUrl,
             video: videoUrl
         })
         
         await newMessage.save();
-        res.status(201).json(newMessage);
-
 
         const receiverSocketId = getReceiverSocketId(receiverId);
         // If the receiver is online (i.e., we have their socket ID), emit the new message to them
@@ -108,6 +110,8 @@ export async function sendMessage(req, res) {
             // Emit the new message to the receiver's socket
             io.to(receiverSocketId).emit("newMessage", newMessage);
         }
+
+        res.status(201).json(newMessage);
 
     }catch(error) {
         console.error("Error sending message:", error);

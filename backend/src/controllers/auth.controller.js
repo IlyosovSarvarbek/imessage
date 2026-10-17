@@ -4,5 +4,5 @@ export async function checkAuth(req, res, next) {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
-  res.status(200).json({ message: "User is authenticated", user: req.user });
+  res.status(200).json(req.user);
 }
